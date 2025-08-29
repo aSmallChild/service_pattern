@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "scripts": {
+    "test": "node --test **/*.test.js"
+  },
+  "dependencies": {
+    "postgres": "^3.4.7"
+  }
+}
