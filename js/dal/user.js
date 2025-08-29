@@ -15,21 +15,23 @@ function userFields(alias = '') {
 
 function buildWhereConditions(sql, { userId, username, email }) {
     const conditions = [];
-    const and = () => conditions.length ? sql` AND ` : sql``;
-    if (userId) {
-        conditions.push(sql`${and()}user_id =
-        ${userId}`);
-    }
-    if (username) {
-        conditions.push(sql`${and()}username =
-        ${username}`);
-    }
-    if (email) {
-        conditions.push(sql`${and()}email =
-        ${email}`);
-    }
-
+    addCondition(sql, conditions, 'user_id', userId);
+    addCondition(sql, conditions, 'username', username);
+    addCondition(sql, conditions, 'email', email);
     return conditions;
+}
+
+function addCondition(sql, conditions, field, value, operator = ' OR ') {
+    if (!value) {
+        return;
+    }
+    operator = sql.unsafe(conditions.length ? operator : '');
+    field = sql.unsafe(field);
+    if (Array.isArray(value)) {
+        conditions.push(sql`${operator} ${field} IN ${sql(value)}`);
+        return;
+    }
+    conditions.push(sql`${operator} ${field} = ${value}`);
 }
 
 export async function putUser(user) {
@@ -61,7 +63,7 @@ export async function createUser({ username, email, passwordHash }) {
 
 export async function updateUser({ userId, username, email, passwordHash, emailValidated }) {
     if (!userId) {
-        throw new Error('userId is required for update');
+        throw new Error('updateUser: userId is required for update');
     }
 
     const sql = await getUserDbConnection();
@@ -69,28 +71,23 @@ export async function updateUser({ userId, username, email, passwordHash, emailV
     const comma = () => updates.length ? sql`, ` : sql``;
 
     if (username !== undefined) {
-        updates.push(sql`${comma()}username =
-        ${username}`);
+        updates.push(sql`${comma()}username = ${username}`);
     }
     if (email !== undefined) {
-        updates.push(sql`${comma()}email =
-        ${email}`);
+        updates.push(sql`${comma()}email = ${email}`);
     }
     if (passwordHash !== undefined) {
-        updates.push(sql`${comma()}password_hash =
-        ${passwordHash}`);
+        updates.push(sql`${comma()}password_hash = ${passwordHash}`);
     }
     if (emailValidated !== undefined) {
-        updates.push(sql`${comma()}email_validated =
-        ${emailValidated}`);
+        updates.push(sql`${comma()}email_validated = ${emailValidated}`);
     }
 
     if (updates.length === 0) {
-        throw new Error('No fields to update');
+        throw new Error('updateUser: No fields to update');
     }
 
     try {
-
         const result = await sql`
             UPDATE "user"
             SET ${updates},
