@@ -38,3 +38,16 @@ export async function closeDbPool() {
 export function dbResultToArray(result) {
     return Array.from(result);
 }
+
+export function addCondition(sql, conditions, field, value, operator = ' OR ') {
+    if (!value) {
+        return;
+    }
+    operator = sql.unsafe(conditions.length ? operator : '');
+    field = sql.unsafe(field);
+    if (Array.isArray(value)) {
+        conditions.push(sql`${operator} ${field} IN ${sql(value)}`);
+        return;
+    }
+    conditions.push(sql`${operator} ${field} = ${value}`);
+}

@@ -1,4 +1,5 @@
-import getUserDbConnection, { dbResultToArray } from '../util/getUserDbConnection.js';
+import getUserDbConnection, { dbResultToArray, addCondition } from '../util/getUserDbConnection.js';
+import { SUCCESS, CREATED, DELETED } from '../util/result.js';
 
 function userFields(alias = '') {
     alias = alias ? alias + '.' : '';
@@ -21,19 +22,6 @@ function buildWhereConditions(sql, { userId, username, email }) {
     return conditions;
 }
 
-function addCondition(sql, conditions, field, value, operator = ' OR ') {
-    if (!value) {
-        return;
-    }
-    operator = sql.unsafe(conditions.length ? operator : '');
-    field = sql.unsafe(field);
-    if (Array.isArray(value)) {
-        conditions.push(sql`${operator} ${field} IN ${sql(value)}`);
-        return;
-    }
-    conditions.push(sql`${operator} ${field} = ${value}`);
-}
-
 export async function putUser(user) {
     try {
         if (user.userId) {
@@ -53,6 +41,7 @@ export async function createUser({ username, email, passwordHash }) {
     }
     const sql = await getUserDbConnection();
     return {
+        status: CREATED,
         users: await sql`
             INSERT INTO "user" (username, email, password_hash, email_validated)
             VALUES (${username}, ${email}, ${passwordHash}, false)
@@ -68,7 +57,7 @@ export async function updateUser({ userId, username, email, passwordHash, emailV
 
     const sql = await getUserDbConnection();
     const updates = [];
-    const comma = () => updates.length ? sql`, ` : sql``;
+    const comma = () => sql.unsafe(updates.length ? ', ' : '');
 
     if (username !== undefined) {
         updates.push(sql`${comma()}username = ${username}`);
@@ -96,7 +85,7 @@ export async function updateUser({ userId, username, email, passwordHash, emailV
             RETURNING ${sql.unsafe(userFields())}
         `;
 
-        return { users: dbResultToArray(result) };
+        return { status: SUCCESS, users: dbResultToArray(result) };
     }
     catch (error) {
         throw new Error('Error in updateUser:', { cause: error });
@@ -115,7 +104,7 @@ export async function getUser({ userId, username, email }) {
             FROM "user" u
             WHERE ${conditions}
         `;
-        return { users: dbResultToArray(result) };
+        return { status: SUCCESS, users: dbResultToArray(result) };
     }
     catch (error) {
         throw new Error('Error in getUser:', { cause: error });
@@ -135,7 +124,7 @@ export async function deleteUser({ userId, username, email }) {
             WHERE ${conditions}
             RETURNING ${sql.unsafe(userFields())}
         `;
-        return { users: dbResultToArray(result) };
+        return { status: DELETED, users: dbResultToArray(result) };
     }
     catch (error) {
         throw new Error('Error in deleteUser:', { cause: error });

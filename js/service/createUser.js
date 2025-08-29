@@ -1,13 +1,25 @@
-import { putUser } from '../dal/user.js';
-import * as Result from '../util/result.js';
-import getUser from '../getUser.js';
-import verifyUserEmail from '../verifyUserEmail.js';
+import { getUser, putUser } from '../dal/user.js';
+import verifyUserEmail from './verifyUserEmail.js';
+import { CONFLICT, isSuccessful } from '../util/result.js';
 
-export default async function createUser(user) {
-    const existingUser = getUser({ username: user.username });
-    if (existingUser) {
-        return { status: Result.CONFLICT };
+export default async function createUser(userDetails) {
+    const existingUser = await getUser({ username: userDetails.username });
+    if (existingUser.users.length) {
+        return { status: CONFLICT, conflictingUser: existingUser.users[0] };
     }
-    await verifyUserEmail(user);
-    return putUser(user);
+
+    let result = await putUser(userDetails);
+    if (!isSuccessful(result.status)) {
+        return result;
+    }
+    const { status, users: [user] } = result;
+
+    result = await verifyUserEmail(userDetails);
+    if (!isSuccessful(result.status)) {
+        result.message = 'Failed to send verification email.';
+        result.user = user;
+        return result;
+    }
+
+    return { status, user };
 }

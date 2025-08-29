@@ -1,26 +1,30 @@
-version: '3.8'
-
+name: service_pattern
 services:
-  postgres_db:
-    image: postgres:17
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: myapp
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: sample_password
-      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./schema:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d myapp"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+    postgres_db:
+        image: postgres:17
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: myapp
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: sample_password
+            POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+            - ./schema:/docker-entrypoint-initdb.d:ro
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready -U postgres -d myapp" ]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 60s
+    email:
+        image: axllent/mailpit
+        ports:
+            - "1025:1025"   # SMTP
+            - "8025:8025"   # Web UI
 
 volumes:
-  postgres_data:
-    driver: local
+    postgres_data:
+        driver: local
