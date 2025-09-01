@@ -3,7 +3,7 @@ import { createEmailToken } from '../dal/userEmailValidation.js';
 import { randomBytes } from 'crypto';
 import { isSuccessful } from '../util/result.js';
 
-export default async function verifyEmail(user) {
+export default async function sendEmailValidation(user) {
     const token = generateTokenBase64();
     const tokenResult = await createEmailToken({ userId: user.userId, emailToken: token });
     if (!isSuccessful(tokenResult)) {

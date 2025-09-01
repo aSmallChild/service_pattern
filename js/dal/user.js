@@ -1,5 +1,5 @@
 import getUserDbConnection, { dbResultToArray, addCondition } from '../util/getUserDbConnection.js';
-import { SUCCESS, CREATED, DELETED } from '../util/result.js';
+import { SUCCESS, CREATED, DELETED, INVALID } from '../util/result.js';
 import User from '../model/User.js';
 
 function userFields(alias = '') {
@@ -40,29 +40,32 @@ export async function putUser(user) {
 }
 
 /**
- * @returns {Promise<{status: string, users: (User[])}>}
+ * @returns {Promise<{status: string, users?: (User[])}>}
  */
 export async function createUser({ username, email, passwordHash }) {
     if (!username || !email || !passwordHash) {
-        throw new Error('username, email, and passwordHash are required for new user');
+        return { status: INVALID };
     }
     const sql = await getUserDbConnection();
-    return {
-        status: CREATED,
-        users: dbResultToArray(await sql`
+    try {
+        const result = await sql`
             INSERT INTO "user" (username, email, password_hash, email_validated)
             VALUES (${username}, ${email}, ${passwordHash}, false)
             RETURNING ${sql.unsafe(userFields())}
-        `, User),
-    };
+        `;
+        return { status: CREATED, users: dbResultToArray(result, User) };
+    }
+    catch (error) {
+        throw new Error('Error in createUser:', { cause: error });
+    }
 }
 
 /**
- * @returns {Promise<{status: string, users: (User[])}>}
+ * @returns {Promise<{status: string, users?: (User[])}>}
  */
 export async function updateUser({ userId, username, email, passwordHash, emailValidated }) {
     if (!userId) {
-        throw new Error('updateUser: userId is required for update');
+        return { status: INVALID };
     }
 
     const sql = await getUserDbConnection();
@@ -83,7 +86,7 @@ export async function updateUser({ userId, username, email, passwordHash, emailV
     }
 
     if (updates.length === 0) {
-        throw new Error('updateUser: No fields to update');
+        return { status: INVALID };
     }
 
     try {
@@ -94,7 +97,9 @@ export async function updateUser({ userId, username, email, passwordHash, emailV
             WHERE user_id = ${userId}
             RETURNING ${sql.unsafe(userFields())}
         `;
-
+        if (!result.length) {
+            return { status: INVALID };
+        }
         return { status: SUCCESS, users: dbResultToArray(result, User) };
     }
     catch (error) {
@@ -103,13 +108,13 @@ export async function updateUser({ userId, username, email, passwordHash, emailV
 }
 
 /**
- * @returns {Promise<{status: string, users: (User[])}>}
+ * @returns {Promise<{status: string, users?: (User[])}>}
  */
 export async function getUser({ userId, username, email }) {
     const sql = await getUserDbConnection();
     const conditions = buildWhereConditions(sql, { userId, username, email });
     if (conditions.length === 0) {
-        throw new Error('No valid parameters provided');
+        return { status: INVALID };
     }
     try {
         const result = await sql`
@@ -125,13 +130,13 @@ export async function getUser({ userId, username, email }) {
 }
 
 /**
- * @returns {Promise<{status: string, users: (User[])}>}
+ * @returns {Promise<{status: string, users?: (User[])}>}
  */
 export async function deleteUser({ userId, username, email }) {
     const sql = await getUserDbConnection();
     const conditions = buildWhereConditions(sql, { userId, username, email });
     if (conditions.length === 0) {
-        throw new Error('No valid parameters provided');
+        return { status: INVALID };
     }
     try {
         const result = await sql`

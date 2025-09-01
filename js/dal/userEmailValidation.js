@@ -1,5 +1,5 @@
 import getUserDbConnection, { dbResultToArray, addCondition } from '../util/getUserDbConnection.js';
-import { SUCCESS, CREATED, DELETED } from '../util/result.js';
+import { SUCCESS, CREATED, DELETED, INVALID } from '../util/result.js';
 import UserEmailValidation from '../model/UserEmailValidation.js';
 
 function emailTokenFields(alias = '') {
@@ -21,11 +21,11 @@ function buildWhereConditions(sql, { userEmailValidationId, userId, emailToken }
 }
 
 /**
- * @returns {Promise<{status: string, emailTokens: (UserEmailValidation[])}>}
+ * @returns {Promise<{status: string, emailTokens?: (UserEmailValidation[])}>}
  */
 export async function createEmailToken({ userId, emailToken }) {
     if (!userId || !emailToken) {
-        throw new Error('userId and emailToken are required');
+        return { status: INVALID };
     }
 
     const sql = await getUserDbConnection();
@@ -43,14 +43,14 @@ export async function createEmailToken({ userId, emailToken }) {
 }
 
 /**
- * @returns {Promise<{status: string, emailTokens: (UserEmailValidation[])}>}
+ * @returns {Promise<{status: string, emailTokens?: (UserEmailValidation[])}>}
  */
 export async function getEmailToken({ userEmailValidationId, userId, emailToken }) {
     const sql = await getUserDbConnection();
     const conditions = buildWhereConditions(sql, { userEmailValidationId, userId, emailToken });
 
     if (conditions.length === 0) {
-        throw new Error('At least one parameter (userEmailValidationId, userId, or emailToken) is required');
+        return { status: INVALID };
     }
 
     try {
@@ -68,14 +68,14 @@ export async function getEmailToken({ userEmailValidationId, userId, emailToken 
 }
 
 /**
- * @returns {Promise<{status: string, emailTokens: (UserEmailValidation[])}>}
+ * @returns {Promise<{status: string, emailTokens?: (UserEmailValidation[])}>}
  */
 export async function deleteEmailToken({ userEmailValidationId, userId, emailToken }) {
     const sql = await getUserDbConnection();
     const conditions = buildWhereConditions(sql, { userEmailValidationId, userId, emailToken });
 
     if (conditions.length === 0) {
-        throw new Error('At least one parameter (userEmailValidationId, userId, or emailToken) is required');
+        return { status: INVALID };
     }
 
     try {

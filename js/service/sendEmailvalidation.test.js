@@ -1,23 +1,27 @@
 import { after, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert';
-import verifyEmail from './verifyEmail.js';
+import sendEmailValidation from './sendEmailValidation.js';
 import { randomUUID } from 'crypto';
 import { clearMessages, getLatestText, listMessages } from '../test/mail.js';
 import { closeDbPool } from '../util/getUserDbConnection.js';
+import { deleteEmailToken } from '../dal/userEmailValidation.js';
 
-describe('service verifyEmail()', () => {
+describe('service sendEmailValidation()', () => {
+    let id;
     beforeEach(async () => {
         await clearMessages();
     });
 
     after(async () => {
+        await deleteEmailToken({userEmailValidationId: id});
         await closeDbPool();
     });
 
-    test('verifyEmail sends correct subject, username, and token', async () => {
+    test('sendEmailValidation sends correct subject, username, and token', async () => {
         const user = { userId: randomUUID(), email: 'test@example.com', username: 'Alice' };
 
-        const result = await verifyEmail(user);
+        const result = await sendEmailValidation(user);
+        id = result.userEmailValidation.userEmailValidationId
         const msgs = await listMessages();
         assert.strictEqual(msgs.total, 1);
         assert.strictEqual(msgs.messages[0].Subject, 'Sample email verification');
@@ -31,4 +35,3 @@ describe('service verifyEmail()', () => {
         assert.strictEqual(tokenMatch.groups.token, result.userEmailValidation.emailToken);
     });
 });
-
