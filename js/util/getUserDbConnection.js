@@ -5,7 +5,7 @@ let connectionPool;
 const dbConfig = {
     host: 'localhost',
     port: 5432,
-    database: 'myapp',
+    database: 'sample_app',
     username: 'postgres',
     password: 'sample_password',
     max: 2,
@@ -34,9 +34,11 @@ export async function closeDbPool() {
     }
 }
 
-
-export function dbResultToArray(result) {
-    return Array.from(result);
+export function dbResultToArray(results, modelClass) {
+    if (modelClass) {
+        return results.map(row => new modelClass(row));
+    }
+    return Array.from(results);
 }
 
 export function addCondition(sql, conditions, field, value, operator = ' OR ') {

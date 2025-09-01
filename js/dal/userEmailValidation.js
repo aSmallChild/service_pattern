@@ -1,5 +1,6 @@
 import getUserDbConnection, { dbResultToArray, addCondition } from '../util/getUserDbConnection.js';
 import { SUCCESS, CREATED, DELETED } from '../util/result.js';
+import UserEmailValidation from '../model/UserEmailValidation.js';
 
 function emailTokenFields(alias = '') {
     alias = alias ? alias + '.' : '';
@@ -19,6 +20,9 @@ function buildWhereConditions(sql, { userEmailValidationId, userId, emailToken }
     return conditions;
 }
 
+/**
+ * @returns {Promise<{status: string, emailTokens: (UserEmailValidation[])}>}
+ */
 export async function createEmailToken({ userId, emailToken }) {
     if (!userId || !emailToken) {
         throw new Error('userId and emailToken are required');
@@ -32,12 +36,15 @@ export async function createEmailToken({ userId, emailToken }) {
             VALUES (${userId}, ${emailToken})
             RETURNING ${sql.unsafe(emailTokenFields())}
         `;
-        return { status: CREATED, emailTokens: dbResultToArray(result) };
+        return { status: CREATED, emailTokens: dbResultToArray(result, UserEmailValidation) };
     } catch (error) {
         throw new Error('Error in createEmailToken', { cause: error });
     }
 }
 
+/**
+ * @returns {Promise<{status: string, emailTokens: (UserEmailValidation[])}>}
+ */
 export async function getEmailToken({ userEmailValidationId, userId, emailToken }) {
     const sql = await getUserDbConnection();
     const conditions = buildWhereConditions(sql, { userEmailValidationId, userId, emailToken });
@@ -54,12 +61,15 @@ export async function getEmailToken({ userEmailValidationId, userId, emailToken 
             ORDER BY created DESC
         `;
 
-        return { status: SUCCESS, emailTokens: dbResultToArray(result) };
+        return { status: SUCCESS, emailTokens: dbResultToArray(result, UserEmailValidation) };
     } catch (error) {
         throw new Error('Error in getEmailToken', { cause: error });
     }
 }
 
+/**
+ * @returns {Promise<{status: string, emailTokens: (UserEmailValidation[])}>}
+ */
 export async function deleteEmailToken({ userEmailValidationId, userId, emailToken }) {
     const sql = await getUserDbConnection();
     const conditions = buildWhereConditions(sql, { userEmailValidationId, userId, emailToken });
@@ -75,12 +85,15 @@ export async function deleteEmailToken({ userEmailValidationId, userId, emailTok
             RETURNING ${sql.unsafe(emailTokenFields())}
         `;
 
-        return { status: DELETED, emailTokens: dbResultToArray(result) };
+        return { status: DELETED, emailTokens: dbResultToArray(result, UserEmailValidation) };
     } catch (error) {
         throw new Error('Error in deleteEmailToken', { cause: error });
     }
 }
 
+/**
+ * @returns {Promise<{status: string, emailTokens: (UserEmailValidation[])}>}
+ */
 export async function deleteExpiredEmailTokens(maxAgeHours = 24) {
     const sql = await getUserDbConnection();
 
@@ -91,7 +104,7 @@ export async function deleteExpiredEmailTokens(maxAgeHours = 24) {
             RETURNING ${sql.unsafe(emailTokenFields())}
         `;
 
-        return { status: DELETED, emailTokens: dbResultToArray(result) };
+        return { status: DELETED, emailTokens: dbResultToArray(result, UserEmailValidation) };
     } catch (error) {
         throw new Error('Error in deleteExpiredEmailTokens', { cause: error });
     }
