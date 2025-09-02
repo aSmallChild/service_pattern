@@ -85,7 +85,7 @@ export async function updateUser({ userId, username, email, passwordHash, emailV
         updates.push(sql`${comma()}email_validated = ${emailValidated}`);
     }
 
-    if (updates.length === 0) {
+    if (!updates.length) {
         return { status: INVALID };
     }
 
@@ -112,8 +112,12 @@ export async function updateUser({ userId, username, email, passwordHash, emailV
  */
 export async function getUser({ userId, username, email }) {
     const sql = await getUserDbConnection();
-    const conditions = buildWhereConditions(sql, { userId, username, email });
-    if (conditions.length === 0) {
+    const conditions = buildWhereConditions(sql, {
+        userId,
+        username,
+        email
+    });
+    if (!conditions.length) {
         return { status: INVALID };
     }
     try {
@@ -122,7 +126,10 @@ export async function getUser({ userId, username, email }) {
             FROM "user" u
             WHERE ${conditions}
         `;
-        return { status: SUCCESS, users: dbResultToArray(result, User) };
+        return {
+            status: SUCCESS,
+            users: dbResultToArray(result, User)
+        };
     }
     catch (error) {
         throw new Error('Error in getUser:', { cause: error });
@@ -135,7 +142,7 @@ export async function getUser({ userId, username, email }) {
 export async function deleteUser({ userId, username, email }) {
     const sql = await getUserDbConnection();
     const conditions = buildWhereConditions(sql, { userId, username, email });
-    if (conditions.length === 0) {
+    if (!conditions.length) {
         return { status: INVALID };
     }
     try {

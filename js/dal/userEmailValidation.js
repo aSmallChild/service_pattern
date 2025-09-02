@@ -49,7 +49,7 @@ export async function getEmailToken({ userEmailValidationId, userId, emailToken 
     const sql = await getUserDbConnection();
     const conditions = buildWhereConditions(sql, { userEmailValidationId, userId, emailToken });
 
-    if (conditions.length === 0) {
+    if (!conditions.length) {
         return { status: INVALID };
     }
 
@@ -74,7 +74,7 @@ export async function deleteEmailToken({ userEmailValidationId, userId, emailTok
     const sql = await getUserDbConnection();
     const conditions = buildWhereConditions(sql, { userEmailValidationId, userId, emailToken });
 
-    if (conditions.length === 0) {
+    if (!conditions.length) {
         return { status: INVALID };
     }
 

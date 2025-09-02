@@ -3,19 +3,22 @@ import sendEmailValidation from './sendEmailValidation.js';
 import { CONFLICT, INVALID, isSuccessful } from '../util/result.js';
 import { hashPassword } from '../util/hashPassword.js';
 
-export default async function registerUser(userDetails) {
-    const existingUser = await getUser({ username: userDetails.username, email: userDetails.email });
-    if (existingUser.users?.length) {
-        return { status: CONFLICT, conflictingUser: existingUser.users[0] };
+export default async function registerUser(newUser) {
+    let result = await getUser(newUser);
+    if (result.users?.length) {
+        return {
+            status: CONFLICT,
+            conflictingUser: result.users[0]
+        };
     }
 
-    if (!userDetails.password) {
+    if (!newUser.password) {
         return { status: INVALID };
     }
-    userDetails.passwordHash = hashPassword(userDetails.password);
-    delete userDetails.password;
+    newUser.passwordHash = hashPassword(newUser.password);
+    delete newUser.password;
 
-    let result = await putUser(userDetails);
+    result = await putUser(newUser);
     if (!isSuccessful(result.status)) {
         return result;
     }
