@@ -28,3 +28,25 @@ export class CreateUser {
         return CreateUser.instance;
     }
 }
+
+export class CreateUser {
+    constructor() {
+        this.getUser = new GetUser();
+        this.verifyUserEmail = new VerifyUserEmail();
+    }
+
+    async run(user) {
+        const existingUser = this.getUser.run({
+            username: user.username
+        });
+        if (existingUser) {
+            return { status: Result.CONFLICT };
+        }
+        this.verifyUserEmail.run(user);
+        const result = await putUser(user);
+        return {
+            status: Result.CREATED,
+            user: result.users[0]
+        };
+    }
+}

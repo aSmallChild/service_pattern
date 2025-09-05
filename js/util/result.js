@@ -6,7 +6,7 @@ export const SUCCESS = 'SUCCESS';
 export const FAILED = 'FAILED';
 
 export function toHttpStatus(result) {
-    switch (result) {
+    switch (result?.status ?? result) {
         case SUCCESS:
         case DELETED:
             return 200;

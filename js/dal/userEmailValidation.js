@@ -56,7 +56,7 @@ export async function getEmailToken({ userEmailValidationId, userId, emailToken 
     try {
         const result = await sql`
             SELECT ${sql.unsafe(emailTokenFields())}
-            FROM user_email_validation et
+            FROM user_email_validation
             WHERE ${conditions}
             ORDER BY created DESC
         `;
