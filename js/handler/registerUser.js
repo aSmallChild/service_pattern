@@ -1,7 +1,7 @@
+import validateUser from '../validator/validateUser.js';
 import registerUser from '../service/registerUser.js';
-import { INVALID } from '../util/result.js';
+import { INVALID, isSuccessful } from '../util/result.js';
 import httpHandler from '../util/httpHandler.js';
-import validateUser from '../service/validateUser.js';
 
 export const handler = httpHandler(async (event) => {
     let body;
@@ -16,7 +16,7 @@ export const handler = httpHandler(async (event) => {
         };
     }
     const result = validateUser(body);
-    if (result.status === INVALID) {
+    if (!isSuccessful(result)) {
         return result;
     }
     return registerUser(result.user);

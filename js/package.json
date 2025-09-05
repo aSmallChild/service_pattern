@@ -1,6 +1,7 @@
 {
   "type": "module",
   "scripts": {
+    "dev": "node --watch test/server.js",
     "test": "node --test **/*.test.js"
   },
   "dependencies": {
