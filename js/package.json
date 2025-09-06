@@ -1,5 +1,8 @@
 {
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "node --watch test/server.js",
     "test": "node --test **/*.test.js"
