@@ -60,43 +60,57 @@ Services are responsible for all other forms of validation e.g. checking if a us
 
 ### [Services](./service)
 
-The service layer is a set of functions that can call each other, and understand each other's return values.
+The service layer is a set of functions that contain business logic.
+These functions can call each other, and understand each other's return values.
 This means that return values should not be serialized. Let the handler decide whether it's returning JSON or XML.
-In the sample code there is a util that defines some constants which can be mapped to status codes.
-This helps to make services agnostic of any external protocols.
-If you had a websocket API, or you were processing items off a queue, it wouldn't be very useful to have services returning HTTP status codes.
 
-If two services need to share the same logic, this can be extracted into a new lower level service.
-This is opposed to making a large general purpose service, which leads to chicken and egg problems with services that need to import each other.
+Use the `verbNoun()` naming convention. 
+Since layer is primarily about logic, rather than the underlying entities used within a service, so the verb is paramount.
 
-As services are about business logic, it's best to have them as plain functions.
-Putting this logic into classes creates extra overheads and barriers to entry.
+Services will naturally be a mix of high level functions and low level functions.
+Avoid mixing low level logic in a high level service.
+If two services need to share the same logic there are two options, 
+1. Favour locality of behaviour, and extract the logic into a private function (a separate function within the service, that is not exported)
+2. Or if it needs to be shared with other services, extract the logic into a new lower level service.
 
-- Named after the business logic it contains.
-- Exposes a single entrypoint,\
-  e.g one exported function per file.
-- Agnostic of any protocol.
-  - Handlers deal with presentation and protocol.
-- Can be called by other services, without RPC.
-- Return value is consumable by other services,\
-  e.g. should not be serialized.
+This is opposed to making large general purpose services.
+When logic is categorized into a class or module, it's not always clear where each new function should go,
+e.g. if there's a `UserService`, and an `EmailValidationService`, where does the function go that deletes an email token and flags a user as validated.
+And as services grow larger, the more you approach chicken and egg problems with services that need to import each other.
+
+A service should expose a single entrypoint, and it's best to have this as plain functions rather than classes.
+Putting this logic into classes creates extra overheads and barriers to entry, where you first have to instantiate it, and then know what to call inside it.
+Classes encapsulate both behaviour and logic, whereas the service layer should just be a hierarchy of logic, not data.
+Keeping the two separate give more flexibility, and reduces the need for later refactors.
+
+The service layer doesn't, and shouldn't, care how it is reached.
+Sometimes it might be through an API. Other times it might be driven off a queue.
+Avoid fragmenting the codebase based on what runs the code, so services are reusable.
+Bundling and tree shaking are good option to avoid issues with the artifacts becoming too large.
+
+In this sample code, all three major layers return objects which contain a `status` field.
+This allows services to easily understand the outcome of a call. 
+It's also a pattern for errors as return values, which means 
+exceptions are reserved for exceptional cases where recovery is not possible.
 
 ### [Data Access Layer](./dal)
-
-As services are a family of functions which can all call each other, it won't be clear in the data layer which databases need to be connected to.
-A simple solution to this is to only establish connections on demand. 
-And if using lambdas or anything else that scales, consider having very small connection pools.
 
 - Named after entities.\
   e.g. User and UserEmailToken
 - Responsible for persisting data, or calling external APIs.
 - Layer of abstraction for the underlying data store,\
-  e.g. services unchanged if database migrates, and use Models to aid with this abstraction.
+  e.g. services unchanged if database migrates, and use models to aid with this abstraction.
 - Manage entities independently.
   - If queries have joins to other entities, have them in a separate combined DAL.
 - To avoid n + 1, allow lists as parameters.\
   e.g. the user DAL should be able to accept a list of userIds that go into a `WHERE IN (...)`\
   so that you can select in batches.
+
+In the case of serverless applications, not every DAL needs to open up a database connection for every worker or lambda.
+And, it may not always be clear in the data layer which databases need to be connected to.
+A simple solution to this is to only establish connections on demand. 
+If there's any scaling involved, consider having very small connection pools.
+Avoiding global code which connects to databases, as this is not as easily removed by tree shaking when it's not needed.
 
 ### [Data Models](./model)
 
